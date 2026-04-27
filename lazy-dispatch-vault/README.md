@@ -3,7 +3,7 @@
 Intra-framework benchmark that measures the CU win from Hopper's lazy
 entrypoint (`hopper_lazy_entrypoint!`) against its standard eager
 fast-entrypoint on dispatch-heavy programs. Closes audit recommendation
-R3 from [`../../AUDIT.md`](../../AUDIT.md).
+R3 from [`../AUDIT.md`](../AUDIT.md).
 
 ## What it measures
 
@@ -39,17 +39,15 @@ cp target/deploy/lazy_dispatch_vault.so target/deploy/lazy_dispatch_lazy.so
 ```
 
 The two `.so` files share the same cdylib name, so copy-then-rename is
-the cleanest way to keep both artefacts side by side. A wrapper script
-(`bench/compare-lazy-dispatch.ps1`) handles this on Windows; on Linux
-or macOS `bench/compare-lazy-dispatch.sh` does the same thing.
+the cleanest way to keep both artefacts side by side. A dedicated wrapper
+script can be added later; the commands above are the canonical flow today.
 
 ## Running the comparison
 
 The existing `framework-vault-bench` harness is designed for the
 four-instruction parity contract and intentionally does not generalise
-to eight instructions. A dedicated runner lives at
-`bench/lazy-dispatch-bench/` (follow-up work, not shipped in R3's
-first cut). In the meantime, a minimal Mollusk invocation looks like:
+to eight instructions. A dedicated runner is follow-up work. In the meantime,
+a minimal Mollusk invocation looks like:
 
 ```rust
 use mollusk_svm::Mollusk;
