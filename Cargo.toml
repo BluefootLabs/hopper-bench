@@ -1,0 +1,21 @@
+[workspace]
+exclude = ["anchor-vault", "docker"]
+members = [
+    "hopper-bench",
+    "framework-vault-bench",
+    "lazy-dispatch-vault",
+    "pinocchio-vault",
+]
+resolver = "2"
+
+[workspace.dependencies]
+five8_const = "0.1"
+pinocchio = { version = "0.10", features = ["cpi", "copy"] }
+pinocchio-system = "0.5"
+pinocchio-token = "0.5"
+
+[workspace.lints.rust]
+unexpected_cfgs = { level = "allow", check-cfg = [
+    'cfg(target_os, values("solana"))',
+    'cfg(target_arch, values("bpf"))',
+] }
