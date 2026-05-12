@@ -10,7 +10,7 @@ description = "CU benchmark program for Hopper framework primitives"
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
-hopper = { path = "../../Hopper-Solana-Zero-copy-State-Framework", package = "hopper-framework", default-features = false, features = ["proc-macros"] }
+hopper = { path = "../../Hopper-Solana-Zero-copy-State-Framework", package = "hopper-lang", default-features = false, features = ["proc-macros"] }
 
 [features]
 default = ["hopper-native-backend"]

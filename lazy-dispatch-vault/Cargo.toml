@@ -11,7 +11,7 @@ name = "lazy_dispatch_vault"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-hopper = { path = "../../Hopper-Solana-Zero-copy-State-Framework", package = "hopper-framework", default-features = false, features = ["hopper-native-backend"] }
+hopper = { path = "../../Hopper-Solana-Zero-copy-State-Framework", package = "hopper-lang", default-features = false, features = ["hopper-native-backend"] }
 
 [features]
 # Exactly one of `eager` or `lazy` must be enabled. The workspace-level
