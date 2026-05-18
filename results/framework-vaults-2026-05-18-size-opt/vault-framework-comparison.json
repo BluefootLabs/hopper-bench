@@ -1,0 +1,61 @@
+{
+  "hopper_root": "\\\\?\\D:\\tmp\\Hopper-Solana-Zero-copy-State-Framework",
+  "quasar_root": "\\\\?\\D:\\tmp\\quasar",
+  "methodology": {
+    "runner": "mollusk-svm shared host runner loading every present framework's compiled SBF binary",
+    "samples": 8,
+    "authorize": "average across shared deterministic user seed cases; signer + writable + PDA validation only on the same ['vault', user] PDA shape with no CPI or lamport mutation; null when an upstream comparator does not implement this instruction",
+    "authorize_failure": "missing-signature variant of the authorize path; must fail without mutating balances and exposes the early validation cost; null when an upstream comparator does not implement authorize",
+    "counter_access": "average across shared deterministic user seed cases; same ['vault', user] PDA plus a 40-byte raw state region [authority:32][counter:8], validated and incremented without CPI or lamport mutation; null when an upstream comparator does not implement this instruction",
+    "deposit": "average across shared deterministic user seed cases; user signer -> program-owned vault PDA via system-program transfer CPI with PDA seeds [\"vault\", user]",
+    "withdraw": "average across shared deterministic user seed cases; program-owned vault PDA -> user via direct lamport mutation after signer and PDA validation",
+    "safety_check": "unsigned withdraw must fail without mutating balances"
+  },
+  "benchmarks": [
+    {
+      "framework": "hopper",
+      "authorize_cu": 430,
+      "authorize_missing_signature_cu": 72,
+      "counter_access_cu": 462,
+      "deposit_cu": 1668,
+      "withdraw_cu": 453,
+      "authorize_vs_hopper": 0,
+      "counter_access_vs_hopper": 0,
+      "deposit_vs_hopper": 0,
+      "withdraw_vs_hopper": 0,
+      "binary_size_bytes": 6744,
+      "binary_size_kib": 6.5859375,
+      "unsigned_withdraw_rejected": true
+    },
+    {
+      "framework": "pinocchio",
+      "authorize_cu": 2512,
+      "authorize_missing_signature_cu": 41,
+      "counter_access_cu": 2539,
+      "deposit_cu": 3856,
+      "withdraw_cu": 2548,
+      "authorize_vs_hopper": 2082,
+      "counter_access_vs_hopper": 2077,
+      "deposit_vs_hopper": 2188,
+      "withdraw_vs_hopper": 2095,
+      "binary_size_bytes": 7920,
+      "binary_size_kib": 7.734375,
+      "unsigned_withdraw_rejected": true
+    },
+    {
+      "framework": "quasar",
+      "authorize_cu": null,
+      "authorize_missing_signature_cu": null,
+      "counter_access_cu": null,
+      "deposit_cu": 1767,
+      "withdraw_cu": 603,
+      "authorize_vs_hopper": null,
+      "counter_access_vs_hopper": null,
+      "deposit_vs_hopper": 99,
+      "withdraw_vs_hopper": 150,
+      "binary_size_bytes": 6424,
+      "binary_size_kib": 6.2734375,
+      "unsigned_withdraw_rejected": true
+    }
+  ]
+}

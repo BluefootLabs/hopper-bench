@@ -1,4 +1,8 @@
 param(
+    # Path to the main Hopper framework checkout. Defaults to the sibling
+    # checkout name used by Hopper development workspaces.
+    [string]$HopperRoot = "..\Hopper-Solana-Zero-copy-State-Framework",
+
     # Optional path to an extracted Quasar checkout. When supplied,
     # the `quasar` framework is added to the comparison. Pre-R2 this
     # was mandatory because the Pinocchio baseline was loaded from
@@ -18,11 +22,16 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$hopperRoot = Split-Path -Parent $PSScriptRoot
+$benchRoot = $PSScriptRoot
+$resolvedHopperRoot = (Resolve-Path -LiteralPath $HopperRoot).Path
+if (-not (Test-Path -LiteralPath (Join-Path $resolvedHopperRoot "examples\hopper-parity-vault\Cargo.toml"))) {
+    throw "Hopper root does not look valid: missing examples\hopper-parity-vault\Cargo.toml"
+}
+
 $resolvedOutDir = if ([System.IO.Path]::IsPathRooted($OutDir)) {
     $OutDir
 } else {
-    Join-Path $hopperRoot $OutDir
+    Join-Path $benchRoot $OutDir
 }
 
 $resolvedQuasarRoot = $null
@@ -92,8 +101,8 @@ function Invoke-CargoCapture {
 
 if (-not $NoBuild) {
     # In-tree baselines: always built.
-    Invoke-CargoCapture -WorkingDirectory $hopperRoot -Arguments @("build-sbf", "--manifest-path", "examples/hopper-parity-vault/Cargo.toml") | Out-Null
-    Invoke-CargoCapture -WorkingDirectory $hopperRoot -Arguments @("build-sbf", "--manifest-path", "bench/pinocchio-vault/Cargo.toml") | Out-Null
+    Invoke-CargoCapture -WorkingDirectory $resolvedHopperRoot -Arguments @("build-sbf", "--manifest-path", "examples/hopper-parity-vault/Cargo.toml") | Out-Null
+    Invoke-CargoCapture -WorkingDirectory $benchRoot -Arguments @("build-sbf", "--manifest-path", "pinocchio-vault/Cargo.toml") | Out-Null
 
     # Optional external comparators.
     if ($resolvedQuasarRoot) {
@@ -106,6 +115,8 @@ $runnerArgs = @(
     "-p",
     "framework-vault-bench",
     "--",
+    "--hopper-root",
+    $resolvedHopperRoot,
     "--out-dir",
     $resolvedOutDir
 )
@@ -116,7 +127,7 @@ if ($resolvedAnchorRoot) {
     $runnerArgs += @("--anchor-root", $resolvedAnchorRoot)
 }
 
-$output = Invoke-CargoCapture -WorkingDirectory $hopperRoot -Arguments $runnerArgs
+$output = Invoke-CargoCapture -WorkingDirectory $benchRoot -Arguments $runnerArgs
 
 Write-Host ""
 Write-Host $output

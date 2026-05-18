@@ -67,7 +67,7 @@ explicit local checkout roots.
 .\compare-framework-vaults.ps1
 
 # Include Quasar from a local checkout.
-.\compare-framework-vaults.ps1 -QuasarRoot d:\tmp\framework-sources\quasar
+.\compare-framework-vaults.ps1 -HopperRoot d:\tmp\Hopper-Solana-Zero-copy-State-Framework -QuasarRoot d:\tmp\quasar
 ```
 
 The benchmark flow:
@@ -77,6 +77,10 @@ The benchmark flow:
 - optionally builds Quasar and Anchor comparators,
 - runs shared deterministic user seed cases,
 - writes JSON and CSV metrics under `results/framework-vaults`.
+
+Quasar's upstream `examples/vault` currently implements only `deposit` and
+`withdraw`; validation-only columns are emitted as `null` / blank for Quasar
+instead of being synthesized by the harness.
 
 See [METHODOLOGY.md](METHODOLOGY.md) for scenario details and [AUDIT.md](AUDIT.md)
 for the benchmark-audit notes that were moved with this repo.

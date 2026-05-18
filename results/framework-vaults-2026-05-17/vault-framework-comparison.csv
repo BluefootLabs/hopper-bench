@@ -1,0 +1,4 @@
+Framework,AuthorizeCu,AuthorizeMissingSignatureCu,CounterAccessCu,DepositCu,WithdrawCu,AuthorizeVsHopper,CounterAccessVsHopper,DepositVsHopper,WithdrawVsHopper,BinarySizeBytes,BinarySizeKiB,UnsignedWithdrawRejected
+hopper,429,71,742,1646,452,0,0,0,0,14944,14.59,true
+pinocchio,2512,41,2539,3856,2548,2083,1797,2210,2096,7920,7.73,true
+quasar,,,,1767,603,,,121,151,6424,6.27,true

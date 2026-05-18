@@ -65,11 +65,10 @@ compile_error!(
 );
 
 #[cfg(all(feature = "eager", feature = "lazy"))]
-compile_error!(
-    "lazy-dispatch-vault requires exactly one of `eager` or `lazy`, not both."
-);
+compile_error!("lazy-dispatch-vault requires exactly one of `eager` or `lazy`, not both.");
 
 use hopper::prelude::*;
+use hopper::systems::SegmentBorrowRegistry;
 
 #[cfg(target_os = "solana")]
 mod __sbf {
@@ -221,8 +220,14 @@ fn process_eager(
                 return Err(ProgramError::NotEnoughAccountKeys);
             }
             let refs: [&AccountView; 8] = [
-                &accounts[0], &accounts[1], &accounts[2], &accounts[3],
-                &accounts[4], &accounts[5], &accounts[6], &accounts[7],
+                &accounts[0],
+                &accounts[1],
+                &accounts[2],
+                &accounts[3],
+                &accounts[4],
+                &accounts[5],
+                &accounts[6],
+                &accounts[7],
             ];
             handle_sweep(&refs)
         }
@@ -231,8 +236,14 @@ fn process_eager(
                 return Err(ProgramError::NotEnoughAccountKeys);
             }
             let refs: [&AccountView; 8] = [
-                &accounts[0], &accounts[1], &accounts[2], &accounts[3],
-                &accounts[4], &accounts[5], &accounts[6], &accounts[7],
+                &accounts[0],
+                &accounts[1],
+                &accounts[2],
+                &accounts[3],
+                &accounts[4],
+                &accounts[5],
+                &accounts[6],
+                &accounts[7],
             ];
             handle_flush(&refs)
         }

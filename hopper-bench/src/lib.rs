@@ -33,11 +33,13 @@
 #![cfg_attr(target_os = "solana", no_std)]
 #![allow(dead_code, unused_variables)]
 
-use hopper::prelude::*;
-use hopper::hopper_core::receipt::{Phase, CompatImpact};
+use hopper::hopper_core::receipt::{CompatImpact, Phase};
+use hopper::hopper_layout;
 #[allow(unused_imports)]
 #[cfg(target_os = "solana")]
 use hopper::hopper_runtime;
+use hopper::prelude::*;
+use hopper::systems::*;
 
 #[cfg(target_os = "solana")]
 mod __hopper_sbf {
@@ -148,9 +150,7 @@ fn process_instruction(
 
 /// Benchmark: check_signer (~20 CU).
 fn bench_check_signer(accounts: &[AccountView]) -> ProgramResult {
-    let account = accounts
-        .first()
-        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let account = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
 
     #[cfg(target_os = "solana")]
     hopper_runtime::msg!("BEGIN check_signer");
@@ -169,9 +169,7 @@ fn bench_check_signer(accounts: &[AccountView]) -> ProgramResult {
 
 /// Benchmark: check_writable (~20 CU).
 fn bench_check_writable(accounts: &[AccountView]) -> ProgramResult {
-    let account = accounts
-        .first()
-        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let account = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
 
     #[cfg(target_os = "solana")]
     hopper_runtime::msg!("BEGIN check_writable");
@@ -190,9 +188,7 @@ fn bench_check_writable(accounts: &[AccountView]) -> ProgramResult {
 
 /// Benchmark: check_owner (~50 CU).
 fn bench_check_owner(accounts: &[AccountView], program_id: &Address) -> ProgramResult {
-    let account = accounts
-        .first()
-        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let account = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
 
     #[cfg(target_os = "solana")]
     hopper_runtime::msg!("BEGIN check_owner");
@@ -211,9 +207,7 @@ fn bench_check_owner(accounts: &[AccountView], program_id: &Address) -> ProgramR
 
 /// Benchmark: Tier 1 full check_account (~120 CU).
 fn bench_check_account_tier1(accounts: &[AccountView], program_id: &Address) -> ProgramResult {
-    let account = accounts
-        .first()
-        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let account = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
 
     #[cfg(target_os = "solana")]
     hopper_runtime::msg!("BEGIN check_account_tier1");
@@ -253,9 +247,7 @@ fn bench_check_keys_eq(accounts: &[AccountView]) -> ProgramResult {
 
 /// Benchmark: overlay (~8 CU for 57-byte BenchVault).
 fn bench_overlay(accounts: &[AccountView], program_id: &Address) -> ProgramResult {
-    let account = accounts
-        .first()
-        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let account = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
     check_owner(account, program_id)?;
 
     // SAFETY: Read-only benchmark. No conflicting borrows.
@@ -278,9 +270,7 @@ fn bench_overlay(accounts: &[AccountView], program_id: &Address) -> ProgramResul
 
 /// Benchmark: write_header (~30 CU).
 fn bench_write_header(accounts: &[AccountView], program_id: &Address) -> ProgramResult {
-    let account = accounts
-        .first()
-        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let account = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
     check_owner(account, program_id)?;
     check_writable(account)?;
 
@@ -304,9 +294,7 @@ fn bench_write_header(accounts: &[AccountView], program_id: &Address) -> Program
 
 /// Benchmark: zero_init (~15 CU for 57 bytes).
 fn bench_zero_init(accounts: &[AccountView], program_id: &Address) -> ProgramResult {
-    let account = accounts
-        .first()
-        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let account = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
     check_owner(account, program_id)?;
     check_writable(account)?;
 
@@ -329,9 +317,7 @@ fn bench_zero_init(accounts: &[AccountView], program_id: &Address) -> ProgramRes
 }
 
 fn bench_write_proc_header(accounts: &[AccountView], program_id: &Address) -> ProgramResult {
-    let account = accounts
-        .first()
-        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let account = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
     check_owner(account, program_id)?;
     check_writable(account)?;
 
@@ -341,9 +327,7 @@ fn bench_write_proc_header(accounts: &[AccountView], program_id: &Address) -> Pr
 
 /// Benchmark: check_account_fast (~12 CU).
 fn bench_check_account_fast(accounts: &[AccountView]) -> ProgramResult {
-    let account = accounts
-        .first()
-        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let account = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
 
     #[cfg(target_os = "solana")]
     hopper_runtime::msg!("BEGIN check_account_fast");
@@ -394,9 +378,7 @@ fn bench_measurement_overhead() -> ProgramResult {
 
 /// Benchmark: TrustProfile::load Strict (~130 CU).
 fn bench_trust_strict_load(accounts: &[AccountView], program_id: &Address) -> ProgramResult {
-    let account = accounts
-        .first()
-        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let account = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
 
     let profile = TrustProfile::strict(program_id, &BenchVault::LAYOUT_ID, BenchVault::LEN);
 
@@ -420,9 +402,7 @@ fn bench_trust_strict_load(accounts: &[AccountView], program_id: &Address) -> Pr
 /// Direct typed view without header validation. Measures the raw
 /// overlay cost that Tier B users pay.
 fn bench_pod_from_bytes(accounts: &[AccountView], program_id: &Address) -> ProgramResult {
-    let account = accounts
-        .first()
-        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let account = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
     check_owner(account, program_id)?;
 
     // SAFETY: Read-only benchmark. No conflicting borrows.
@@ -433,8 +413,8 @@ fn bench_pod_from_bytes(accounts: &[AccountView], program_id: &Address) -> Progr
     #[cfg(target_os = "solana")]
     hopper_runtime::syscall::sol_log_compute_units();
 
-    let _vault = pod_from_bytes::<BenchVault>(data)
-        .map_err(|_| ProgramError::InvalidAccountData)?;
+    let _vault =
+        pod_from_bytes::<BenchVault>(data).map_err(|_| ProgramError::InvalidAccountData)?;
 
     #[cfg(target_os = "solana")]
     hopper_runtime::syscall::sol_log_compute_units();
@@ -448,9 +428,7 @@ fn bench_pod_from_bytes(accounts: &[AccountView], program_id: &Address) -> Progr
 ///
 /// Measures the cost of StateReceipt snapshot + diff computation.
 fn bench_receipt(accounts: &[AccountView], program_id: &Address) -> ProgramResult {
-    let account = accounts
-        .first()
-        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let account = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
     check_owner(account, program_id)?;
 
     // SAFETY: Read-only benchmark.
@@ -476,9 +454,7 @@ fn bench_receipt(accounts: &[AccountView], program_id: &Address) -> ProgramResul
 ///
 /// Measures layout_id comparison (8-byte memcmp).
 fn bench_fingerprint_check(accounts: &[AccountView], program_id: &Address) -> ProgramResult {
-    let account = accounts
-        .first()
-        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let account = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
     check_owner(account, program_id)?;
 
     // SAFETY: Read-only benchmark.
@@ -489,8 +465,8 @@ fn bench_fingerprint_check(accounts: &[AccountView], program_id: &Address) -> Pr
     #[cfg(target_os = "solana")]
     hopper_runtime::syscall::sol_log_compute_units();
 
-    let id = read_layout_id(data).ok_or(ProgramError::AccountDataTooSmall)?;
-    if *id != BenchVault::LAYOUT_ID {
+    let id = read_layout_id(data)?;
+    if id != BenchVault::LAYOUT_ID {
         return Err(ProgramError::InvalidAccountData);
     }
 
@@ -506,9 +482,7 @@ fn bench_fingerprint_check(accounts: &[AccountView], program_id: &Address) -> Pr
 ///
 /// Measures snapshot + diff computation (without receipt overhead).
 fn bench_state_diff(accounts: &[AccountView], program_id: &Address) -> ProgramResult {
-    let account = accounts
-        .first()
-        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let account = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
     check_owner(account, program_id)?;
 
     // SAFETY: Read-only benchmark.
@@ -536,9 +510,7 @@ fn bench_state_diff(accounts: &[AccountView], program_id: &Address) -> ProgramRe
 /// Measures the cost of getting a mutable overlay and writing one field.
 /// This is the hot-path write cost for Tier A usage.
 fn bench_overlay_mut_field_set(accounts: &[AccountView], program_id: &Address) -> ProgramResult {
-    let account = accounts
-        .first()
-        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let account = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
     check_owner(account, program_id)?;
     check_writable(account)?;
 
@@ -569,9 +541,7 @@ fn bench_overlay_mut_field_set(accounts: &[AccountView], program_id: &Address) -
 ///
 /// The point: Hopper's safe overlay is within 4 CU of this raw path.
 fn bench_raw_cast_baseline(accounts: &[AccountView], program_id: &Address) -> ProgramResult {
-    let account = accounts
-        .first()
-        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let account = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
     check_owner(account, program_id)?;
 
     // SAFETY: Read-only benchmark.
@@ -603,9 +573,7 @@ fn bench_raw_cast_baseline(accounts: &[AccountView], program_id: &Address) -> Pr
 /// Measures StateReceipt with all enriched fields:
 /// phase, compat_impact, validation_bundle_id, migration_flags.
 fn bench_receipt_full(accounts: &[AccountView], program_id: &Address) -> ProgramResult {
-    let account = accounts
-        .first()
-        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let account = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
     check_owner(account, program_id)?;
 
     // SAFETY: Read-only benchmark.
@@ -635,9 +603,7 @@ fn bench_receipt_full(accounts: &[AccountView], program_id: &Address) -> Program
 ///
 /// Measures full receipt cycle: begin, set fields, commit, emit as event.
 fn bench_receipt_emit(accounts: &[AccountView], program_id: &Address) -> ProgramResult {
-    let account = accounts
-        .first()
-        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let account = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
     check_owner(account, program_id)?;
 
     // SAFETY: Read-only benchmark.

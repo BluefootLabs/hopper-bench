@@ -36,11 +36,8 @@
 #![cfg_attr(target_os = "solana", no_std)]
 #![allow(clippy::result_large_err)]
 
-use pinocchio::{
-    program_entrypoint,
-    AccountView, Address, ProgramResult,
-};
 use pinocchio::error::ProgramError;
+use pinocchio::{program_entrypoint, AccountView, Address, ProgramResult};
 use pinocchio_system::instructions::Transfer;
 
 #[cfg(target_os = "solana")]
@@ -86,8 +83,7 @@ fn parse_amount(data: &[u8]) -> Result<u64, ProgramError> {
         return Err(ProgramError::InvalidInstructionData);
     }
     Ok(u64::from_le_bytes([
-        data[0], data[1], data[2], data[3],
-        data[4], data[5], data[6], data[7],
+        data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7],
     ]))
 }
 
@@ -107,10 +103,8 @@ fn verify_vault_pda(
     #[cfg(any(target_os = "solana", target_arch = "bpf"))]
     {
         let user_address = user.address();
-        let (expected, _bump) = Address::find_program_address(
-            &[b"vault", user_address.as_ref()],
-            program_id,
-        );
+        let (expected, _bump) =
+            Address::find_program_address(&[b"vault", user_address.as_ref()], program_id);
         if expected.to_bytes() != vault.address().to_bytes() {
             return Err(ProgramError::InvalidSeeds);
         }
@@ -149,11 +143,7 @@ fn validate_writable(account: &AccountView) -> ProgramResult {
 /// Move `amount` lamports from `user` to `vault` via the system program.
 ///
 /// Accounts: `[user (signer, mut), vault (mut), system_program]`.
-fn process_deposit(
-    program_id: &Address,
-    accounts: &[AccountView],
-    data: &[u8],
-) -> ProgramResult {
+fn process_deposit(program_id: &Address, accounts: &[AccountView], data: &[u8]) -> ProgramResult {
     let [user, vault, system_program, ..] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);
     };
@@ -180,11 +170,7 @@ fn process_deposit(
 /// authority (enforced by the PDA seed binding `["vault", user]`).
 ///
 /// Accounts: `[user (signer, mut), vault (mut)]`.
-fn process_withdraw(
-    program_id: &Address,
-    accounts: &[AccountView],
-    data: &[u8],
-) -> ProgramResult {
+fn process_withdraw(program_id: &Address, accounts: &[AccountView], data: &[u8]) -> ProgramResult {
     let [user, vault, ..] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);
     };
@@ -256,8 +242,7 @@ fn process_counter_access(program_id: &Address, accounts: &[AccountView]) -> Pro
     }
 
     let counter = u64::from_le_bytes([
-        data[32], data[33], data[34], data[35],
-        data[36], data[37], data[38], data[39],
+        data[32], data[33], data[34], data[35], data[36], data[37], data[38], data[39],
     ]);
     let next = counter
         .checked_add(1)
