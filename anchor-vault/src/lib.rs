@@ -9,36 +9,32 @@
 //! This is the "real Anchor" baseline the bench harness was reserving
 //! a column for via the optional `--anchor-root` flag. With this crate
 //! present the bench can load the binary from
-//! `bench/anchor-vault/target/deploy/anchor_vault.so` without needing
+//! `anchor-vault/target/deploy/anchor_vault.so` without needing
 //! an external Anchor checkout.
 //!
 //! ## Program ID
 //!
-//! The `declare_id!` string below must base58-decode to the same 32
-//! bytes the bench harness uses for `ANCHOR_PROGRAM_ID`. If you
-//! re-roll the ID, update both sides or Mollusk will report a
-//! `ProgramMismatch` error.
+//! The `declare_id!` string below is the default synthetic ID used for
+//! non-devnet local runs. Devnet runs stage a temporary copy of this
+//! crate with `declare_id!` rewritten to the generated deploy keypair
+//! so Anchor's runtime ID check matches the real deployed program.
 //!
 //! ## Behaviour parity with hopper-parity-vault
 //!
 //! | Discriminator (first byte of ix data) | Name             | Contract |
 //! |---------------------------------------|------------------|----------|
-//! | `0` (Anchor uses 8-byte discriminator) | `deposit`        | user → vault via system CPI |
-//! | `1`                                    | `withdraw`       | vault → user via direct lamport mutation |
+//! | `0` (Anchor uses 8-byte discriminator) | `deposit`        | user -> vault via system CPI |
+//! | `1`                                    | `withdraw`       | vault -> user via direct lamport mutation |
 //! | `2`                                    | `authorize`      | signer + PDA validation |
 //! | `3`                                    | `counter_access` | authority check + u64 counter increment |
 //!
 //! **Important detail.** Anchor's default instruction dispatch uses an
 //! 8-byte SHA-256 discriminator computed from the handler name
-//! (`global:deposit`, etc.), not a single byte. The bench harness
-//! currently sends a single-byte discriminator (`[0]`, `[1]`, `[2]`,
-//! `[3]`) to stay consistent with the Hopper, Pinocchio, and Quasar
-//! vaults, which all use single-byte dispatch. To keep Anchor inside
-//! the same contract, this program installs an 8-byte Anchor
-//! discriminator of `[N, 0, 0, 0, 0, 0, 0, 0]` for each variant (so
-//! the single-byte `[0]` becomes `[0, 0, 0, 0, 0, 0, 0, 0, ...args]`
-//! on the wire — compatible with a tweaked harness entry). See the
-//! `discriminator` attribute on each handler. If you prefer to keep
+//! (`global:deposit`, etc.), not a single byte. Hopper, Pinocchio,
+//! and Quasar stay on one-byte dispatch, while the bench harness emits
+//! Anchor's required 8-byte prefix `[N, 0, 0, 0, 0, 0, 0, 0]` for each
+//! Anchor variant. See the `discriminator` attribute on each handler.
+//! If you prefer to keep
 //! Anchor's native SHA-256 discriminators, remove the explicit
 //! `discriminator = ...` attributes and update the harness's
 //! `deposit_instruction` / `withdraw_instruction` /

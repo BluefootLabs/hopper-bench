@@ -6,10 +6,10 @@
 # transitive conflicts can't leak into the core crates. Build this
 # package with its own manifest:
 #
-#     cargo build-sbf --manifest-path bench/anchor-vault/Cargo.toml
+#     cargo build-sbf --manifest-path anchor-vault/Cargo.toml
 #
 # The resulting `anchor_vault.so` lands at
-# `bench/anchor-vault/target/deploy/anchor_vault.so` (its own
+# `anchor-vault/target/deploy/anchor_vault.so` (its own
 # per-package target/), which the workspace-level
 # `framework-vault-bench` harness will pick up automatically.
 [package]
@@ -31,11 +31,15 @@ name = "anchor_vault"
 no-entrypoint = []
 no-idl = []
 no-log-ix-name = []
+anchor-debug = []
+custom-heap = []
+custom-panic = []
 cpi = ["no-entrypoint"]
 default = []
 
 [dependencies]
 anchor-lang = "0.31"
+bytemuck = { version = "1", features = ["derive"] }
 
 [profile.release]
 overflow-checks = true

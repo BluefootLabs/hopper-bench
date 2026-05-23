@@ -17,9 +17,10 @@ The audit's methodology requirements (page 15) are:
    **not** allowed to change what the program actually does. If an upstream
    comparator does not implement a workload, that cell is `null` / `n/a`, not a
    synthesized substitute.
-4. **Both host and SBF measurements** where relevant. On-chain
-   CU is the authoritative comparison number; host benchmarks are
-   used only for development iteration.
+4. **Real SBF artifacts with deploy provenance** where relevant. The
+   vault comparison runs the compiled SBF artifacts in Mollusk and can
+   record real devnet deployments for every framework via
+   `compare-framework-vaults.ps1 -DeployDevnet`.
 
 ## Frameworks measured
 
@@ -28,7 +29,7 @@ The audit's methodology requirements (page 15) are:
 | **Hopper** | `$hopper_root/target/deploy/hopper_parity_vault.so` (main Hopper repo) | Yes. baseline |
 | **Pinocchio** | `target/deploy/pinocchio_vault.so` (this repo, `pinocchio-vault`) | Yes. raw-substrate baseline |
 | **Quasar** | `$quasar_root/target/deploy/quasar_vault.so` | Optional, skipped if `--quasar-root` is not passed or the binary is missing |
-| **Anchor** | `bench/anchor-vault/target/deploy/anchor_vault.so` (in-tree, R9) or `$anchor_root/target/deploy/anchor_vault.so` | Optional. Built in-tree via `cargo build-sbf --manifest-path bench/anchor-vault/Cargo.toml`; if that binary is missing, harness falls back to `--anchor-root` |
+| **Anchor** | `anchor-vault/target/deploy/anchor_vault.so` (in-tree, R9) or `$anchor_root/target/deploy/anchor_vault.so` | Optional. A supplied `--anchor-root` is preferred. Devnet runs stage a temporary Anchor build whose `declare_id!` matches the generated deployed program ID. |
 
 The Pinocchio baseline is now built in-tree against Anza's own
 `pinocchio = "0.10"` and `pinocchio-system = "0.5"` crates
@@ -49,10 +50,10 @@ makes each compute-unit delta meaningful.
 
 | Instruction | Behaviour | Accounts |
 |---|---|---|
-| `authorize` | Gate: require signer authority matches the vault's recorded authority | `[vault (ro), authority (signer)]` |
-| `counter_access` | Read: increment a stored `u64` counter, return the new value | `[vault (mut), authority (signer)]` |
-| `deposit` | Financial: move `lamports` from payer to vault, increment balance counter | `[vault (mut), payer (signer, mut), system_program]` |
-| `withdraw` | Financial: move `lamports` from vault to user, require signer match | `[vault (mut), authority (signer), user (mut)]` |
+| `authorize` | Gate: require signer authority matches the vault PDA authority | `[user (signer), vault (mut)]` |
+| `counter_access` | Read: increment a stored `u64` counter | `[user (signer), vault (mut)]` |
+| `deposit` | Financial: move `lamports` from user to vault | `[user (signer, mut), vault (mut), system_program]` |
+| `withdraw` | Financial: move `lamports` from vault to user, require signer match | `[user (signer, mut), vault (mut)]` |
 
 Quasar's upstream `examples/vault` currently implements only `deposit` and
 `withdraw`; the runner records `null` for Quasar's `authorize` and
@@ -62,22 +63,22 @@ in-tree Anchor target implement the extended rows.
 The vault state layout is:
 
 ```text
-// 8 bytes counter + 32 bytes authority = 40 bytes body
+// 32 bytes authority + 8 bytes counter = 40 bytes body
 #[repr(C)]
 struct Vault {
-    counter: u64,         // LE
     authority: [u8; 32],
+   counter: u64,         // LE
 }
 ```
 
-Under the 16-byte Hopper header the total account size is 56 bytes
-(8 + 32 + 16 header = 56). Competitor frameworks are free to use
-their own header scheme but the *payload* semantics must match.
+Anchor's `AccountLoader` path prepends its 8-byte account discriminator
+to the same 40-byte body. Competitor frameworks are free to use their
+own header scheme but the *payload* semantics must match.
 
 ## Seven measured workloads (audit page 15)
 
-Every workload is executed once per sample and the mean is reported.
-Default `samples = 128`.
+Every vault workload is executed once per deterministic shared user seed
+and the mean is reported. The current vault runner uses 8 shared seeds.
 
 | Workload | What it exercises |
 |---|---|
@@ -99,7 +100,8 @@ them).
 
 Per framework, per supported instruction:
 
-- **Compute units**. read from `sol_log_compute_units` deltas.
+- **Compute units**. read from Mollusk's `compute_units_consumed` result
+   for the loaded SBF artifact.
 - **Binary size**. from the `.so` file on disk, both in bytes and KiB.
 - **Stack frame size**. extracted from `llvm-objdump --section=.text`.
 - **Unsigned-withdraw rejection**. a safety correctness check: the
@@ -148,6 +150,17 @@ cargo run -p framework-vault-bench --release -- \
     --quasar-root $QUASAR_ROOT \
     --anchor-root $ANCHOR_ROOT \
       --out-dir results/framework-vaults
+
+# Or build, deploy fresh real devnet programs for every available
+# framework, record their IDs, and run the same Mollusk matrix with
+# those program IDs.
+.\compare-framework-vaults.ps1 `
+   -HopperRoot D:\tmp\Hopper-Solana-Zero-copy-State-Framework `
+   -QuasarRoot D:\tmp\quasar `
+   -OutDir results\framework-vaults-devnet-YYYY-MM-DD `
+   -DeployDevnet `
+   -Keypair C:\path\to\devnet-payer.json `
+   -RpcUrl https://api.devnet.solana.com
 
 # Inspect.
 jq '.benchmarks[] | {framework, authorize_cu, deposit_cu, binary_size_kib}' \

@@ -1197,7 +1197,7 @@ dependencies = [
 
 [[package]]
 name = "hopper-anchor"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "hopper-runtime",
  "sha2-const-stable",
@@ -1205,7 +1205,7 @@ dependencies = [
 
 [[package]]
 name = "hopper-associated-token"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "hopper-runtime",
  "hopper-solana",
@@ -1220,7 +1220,7 @@ dependencies = [
 
 [[package]]
 name = "hopper-derive"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1231,14 +1231,14 @@ dependencies = [
 
 [[package]]
 name = "hopper-distribute"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "hopper-runtime",
 ]
 
 [[package]]
 name = "hopper-finance"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "hopper-runtime",
  "hopper-systems",
@@ -1246,7 +1246,7 @@ dependencies = [
 
 [[package]]
 name = "hopper-lang"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "hopper-anchor",
  "hopper-associated-token",
@@ -1272,14 +1272,14 @@ dependencies = [
 
 [[package]]
 name = "hopper-lending"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "hopper-runtime",
 ]
 
 [[package]]
 name = "hopper-macros"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "hopper-runtime",
  "hopper-schema",
@@ -1289,14 +1289,14 @@ dependencies = [
 
 [[package]]
 name = "hopper-memo"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "hopper-runtime",
 ]
 
 [[package]]
 name = "hopper-metaplex"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "five8_const 0.1.4",
  "hopper-runtime",
@@ -1304,14 +1304,14 @@ dependencies = [
 
 [[package]]
 name = "hopper-multisig"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "hopper-runtime",
 ]
 
 [[package]]
 name = "hopper-native"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bytemuck",
  "five8_const 0.1.4",
@@ -1319,20 +1319,20 @@ dependencies = [
 
 [[package]]
 name = "hopper-runtime"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bytemuck",
  "five8_const 0.1.4",
  "hopper-native",
- "pinocchio",
- "pinocchio-system",
+ "pinocchio 0.11.1",
+ "pinocchio-system 0.6.1",
  "pinocchio-token",
  "solana-program",
 ]
 
 [[package]]
 name = "hopper-schema"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "hopper-runtime",
  "hopper-systems",
@@ -1340,7 +1340,7 @@ dependencies = [
 
 [[package]]
 name = "hopper-solana"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "five8_const 0.1.4",
  "hopper-runtime",
@@ -1351,35 +1351,35 @@ dependencies = [
 
 [[package]]
 name = "hopper-staking"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "hopper-runtime",
 ]
 
 [[package]]
 name = "hopper-system"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "hopper-runtime",
 ]
 
 [[package]]
 name = "hopper-systems"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "hopper-runtime",
 ]
 
 [[package]]
 name = "hopper-token"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "hopper-runtime",
 ]
 
 [[package]]
 name = "hopper-token-2022"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "hopper-runtime",
  "hopper-solana",
@@ -1387,7 +1387,7 @@ dependencies = [
 
 [[package]]
 name = "hopper-vesting"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "hopper-runtime",
 ]
@@ -1920,10 +1920,23 @@ version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c06810dac15a4ef83d3dabdb4f2f22fb39c9adff669cd2781da4f716510a647c"
 dependencies = [
- "solana-account-view",
+ "solana-account-view 1.0.0",
  "solana-address 2.6.0",
  "solana-define-syscall 4.0.1",
- "solana-instruction-view",
+ "solana-instruction-view 1.0.0",
+ "solana-program-error 3.0.1",
+]
+
+[[package]]
+name = "pinocchio"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d707cea2843c1a2fd8ec49e4116ce3fdaedcd552a3ee168b03ce60e627fc0f62"
+dependencies = [
+ "solana-account-view 2.0.0",
+ "solana-address 2.6.0",
+ "solana-define-syscall 5.1.0",
+ "solana-instruction-view 2.1.0",
  "solana-program-error 3.0.1",
 ]
 
@@ -1933,19 +1946,29 @@ version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "24044a0815753862b558e179e78f03f7344cb755de48617a09d7d23b50883b6c"
 dependencies = [
- "pinocchio",
+ "pinocchio 0.10.2",
+ "solana-address 2.6.0",
+]
+
+[[package]]
+name = "pinocchio-system"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f3ae2ee67b42e2ac797dd88312da473c895660e270d8093e0ba2749b885b5778"
+dependencies = [
+ "pinocchio 0.11.1",
  "solana-address 2.6.0",
 ]
 
 [[package]]
 name = "pinocchio-token"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "febf3bbe37f4e2723b9b41a1768c6542a1ae1b1d7bcac27f892f30cabcf70ec4"
+checksum = "825f59c8348e5c2d3fd56432ef927f5819542b3b05fae4f5b6869801113e775e"
 dependencies = [
- "solana-account-view",
+ "solana-account-view 2.0.0",
  "solana-address 2.6.0",
- "solana-instruction-view",
+ "solana-instruction-view 2.1.0",
  "solana-program-error 3.0.1",
 ]
 
@@ -1953,8 +1976,8 @@ dependencies = [
 name = "pinocchio-vault"
 version = "0.1.0"
 dependencies = [
- "pinocchio",
- "pinocchio-system",
+ "pinocchio 0.10.2",
+ "pinocchio-system 0.5.0",
 ]
 
 [[package]]
@@ -2409,6 +2432,16 @@ name = "solana-account-view"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f37ca34c37f92ee341b73d5ce7c8ef5bb38e9a87955b4bd343c63fa18b149215"
+dependencies = [
+ "solana-address 2.6.0",
+ "solana-program-error 3.0.1",
+]
+
+[[package]]
+name = "solana-account-view"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc141b940560430425ebaadb7645496c45f6a10fad9911d719bd03eab7f4d422"
 dependencies = [
  "solana-address 2.6.0",
  "solana-program-error 3.0.1",
@@ -2916,9 +2949,21 @@ version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "60147e4d0a4620013df40bf30a86dd299203ff12fcb8b593cd51014fce0875d8"
 dependencies = [
- "solana-account-view",
+ "solana-account-view 1.0.0",
  "solana-address 2.6.0",
  "solana-define-syscall 4.0.1",
+ "solana-program-error 3.0.1",
+]
+
+[[package]]
+name = "solana-instruction-view"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ab7a27d0c4214b9f7389c3dd00b68c93093a67f1dcc5b7893aebe299bbcbb47"
+dependencies = [
+ "solana-account-view 2.0.0",
+ "solana-address 2.6.0",
+ "solana-define-syscall 5.1.0",
  "solana-program-error 3.0.1",
 ]
 

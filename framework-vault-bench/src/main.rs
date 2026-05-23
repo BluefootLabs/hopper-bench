@@ -7,6 +7,7 @@ use {
     std::{
         env, fs,
         path::{Path, PathBuf},
+        str::FromStr,
     },
 };
 
@@ -33,6 +34,9 @@ const DEPOSIT_AMOUNT: u64 = 1_000_000_000;
 const WITHDRAW_VAULT_LAMPORTS: u64 = 1_000_000_000;
 const WITHDRAW_AMOUNT: u64 = 500_000_000;
 const COUNTER_DATA_LEN: usize = 40;
+const ANCHOR_COUNTER_DATA_LEN: usize = 48;
+const ANCHOR_COUNTER_STATE_DISCRIMINATOR: [u8; 8] =
+    [0x62, 0x17, 0xcd, 0x9f, 0x0e, 0xca, 0x4f, 0x8b];
 const COUNTER_INITIAL_VALUE: u64 = 7;
 const SHARED_USER_CASES: [[u8; 32]; 8] = [
     [0x11; 32], [0x22; 32], [0x33; 32], [0x44; 32], [0x55; 32], [0x66; 32], [0x77; 32], [0x88; 32],
@@ -53,6 +57,7 @@ struct Methodology {
 #[derive(Serialize)]
 struct FrameworkMetric {
     framework: &'static str,
+    program_id: String,
     authorize_cu: Option<u64>,
     authorize_missing_signature_cu: Option<u64>,
     counter_access_cu: Option<u64>,
@@ -97,6 +102,15 @@ struct Args {
     /// matrix. See `bench/METHODOLOGY.md` for the shared contract.
     anchor_root: Option<PathBuf>,
     out_dir: PathBuf,
+    program_ids: ProgramIdOverrides,
+}
+
+#[derive(Default)]
+struct ProgramIdOverrides {
+    hopper: Option<Address>,
+    pinocchio: Option<Address>,
+    quasar: Option<Address>,
+    anchor: Option<Address>,
 }
 
 fn main() {
@@ -124,7 +138,7 @@ fn run() -> Result<(), String> {
     let mut specs: Vec<ProgramSpec> = vec![
         ProgramSpec {
             framework: "hopper",
-            program_id: HOPPER_PROGRAM_ID,
+            program_id: args.program_ids.hopper.unwrap_or(HOPPER_PROGRAM_ID),
             binary_path: args
                 .hopper_root
                 .join("target/deploy/hopper_parity_vault.so"),
@@ -132,7 +146,7 @@ fn run() -> Result<(), String> {
         },
         ProgramSpec {
             framework: "pinocchio",
-            program_id: PINOCCHIO_PROGRAM_ID,
+            program_id: args.program_ids.pinocchio.unwrap_or(PINOCCHIO_PROGRAM_ID),
             binary_path: workspace_root.join("target/deploy/pinocchio_vault.so"),
             supports_validation_workloads: true,
         },
@@ -140,27 +154,28 @@ fn run() -> Result<(), String> {
     if let Some(quasar_root) = &args.quasar_root {
         specs.push(ProgramSpec {
             framework: "quasar",
-            program_id: QUASAR_PROGRAM_ID,
+            program_id: args.program_ids.quasar.unwrap_or(QUASAR_PROGRAM_ID),
             binary_path: quasar_root.join("target/deploy/quasar_vault.so"),
             supports_validation_workloads: false,
         });
     }
-    // Anchor: prefer the in-tree `bench/anchor-vault` binary if it's
-    // been built (R9 closure). Fall back to `--anchor-root` for users
-    // who still point at an external Anchor checkout.
-    let anchor_in_tree = workspace_root.join("bench/anchor-vault/target/deploy/anchor_vault.so");
-    if anchor_in_tree.is_file() {
+    // Anchor: prefer an explicit `--anchor-root` so devnet runs can
+    // pass a staged build whose `declare_id!` matches the deployed
+    // program keypair. Fall back to the in-tree Anchor binary if it
+    // has been built.
+    let anchor_in_tree = workspace_root.join("anchor-vault/target/deploy/anchor_vault.so");
+    if let Some(anchor_root) = &args.anchor_root {
         specs.push(ProgramSpec {
             framework: "anchor",
-            program_id: ANCHOR_PROGRAM_ID,
-            binary_path: anchor_in_tree,
+            program_id: args.program_ids.anchor.unwrap_or(ANCHOR_PROGRAM_ID),
+            binary_path: anchor_root.join("target/deploy/anchor_vault.so"),
             supports_validation_workloads: true,
         });
-    } else if let Some(anchor_root) = &args.anchor_root {
+    } else if anchor_in_tree.is_file() {
         specs.push(ProgramSpec {
             framework: "anchor",
-            program_id: ANCHOR_PROGRAM_ID,
-            binary_path: anchor_root.join("target/deploy/anchor_vault.so"),
+            program_id: args.program_ids.anchor.unwrap_or(ANCHOR_PROGRAM_ID),
+            binary_path: anchor_in_tree,
             supports_validation_workloads: true,
         });
     }
@@ -228,7 +243,7 @@ fn run() -> Result<(), String> {
             samples: SHARED_USER_CASES.len(),
             authorize: "average across shared deterministic user seed cases; signer + writable + PDA validation only on the same ['vault', user] PDA shape with no CPI or lamport mutation; null when an upstream comparator does not implement this instruction",
             authorize_failure: "missing-signature variant of the authorize path; must fail without mutating balances and exposes the early validation cost; null when an upstream comparator does not implement authorize",
-            counter_access: "average across shared deterministic user seed cases; same ['vault', user] PDA plus a 40-byte raw state region [authority:32][counter:8], validated and incremented without CPI or lamport mutation; null when an upstream comparator does not implement this instruction",
+            counter_access: "average across shared deterministic user seed cases; same ['vault', user] PDA plus [authority:32][counter:8] state, with Anchor using its 8-byte AccountLoader discriminator in front of the same body; validated and incremented without CPI or lamport mutation; null when an upstream comparator does not implement this instruction",
             deposit: "average across shared deterministic user seed cases; user signer -> program-owned vault PDA via system-program transfer CPI with PDA seeds [\"vault\", user]",
             withdraw: "average across shared deterministic user seed cases; program-owned vault PDA -> user via direct lamport mutation after signer and PDA validation",
             safety_check: "unsigned withdraw must fail without mutating balances",
@@ -252,8 +267,9 @@ fn run() -> Result<(), String> {
     println!();
     println!("Vault framework comparison");
     println!(
-        "{:<16} {:>10} {:>11} {:>10} {:>11} {:>10} {:>11} {:>11}",
+        "{:<16} {:<44} {:>10} {:>11} {:>10} {:>11} {:>10} {:>11} {:>11}",
         "Framework",
+        "ProgramId",
         "Authorize",
         "AuthFail",
         "Counter",
@@ -264,8 +280,9 @@ fn run() -> Result<(), String> {
     );
     for benchmark in &report.benchmarks {
         println!(
-            "{:<16} {:>10} {:>11} {:>10} {:>11} {:>10} {:>11.2} {:>11}",
+            "{:<16} {:<44} {:>10} {:>11} {:>10} {:>11} {:>10} {:>11.2} {:>11}",
             benchmark.framework,
+            benchmark.program_id,
             fmt_opt_u64(benchmark.authorize_cu),
             fmt_opt_u64(benchmark.authorize_missing_signature_cu),
             fmt_opt_u64(benchmark.counter_access_cu),
@@ -291,6 +308,7 @@ fn parse_args() -> Result<Args, String> {
     let mut quasar_root = None;
     let mut anchor_root: Option<PathBuf> = None;
     let mut out_dir = None;
+    let mut program_ids = ProgramIdOverrides::default();
     let mut args = env::args().skip(1);
 
     while let Some(arg) = args.next() {
@@ -319,9 +337,33 @@ fn parse_args() -> Result<Args, String> {
                     .ok_or_else(|| "missing value for --out-dir".to_string())?;
                 out_dir = Some(PathBuf::from(value));
             }
+            "--hopper-program-id" => {
+                let value = args
+                    .next()
+                    .ok_or_else(|| "missing value for --hopper-program-id".to_string())?;
+                program_ids.hopper = Some(parse_program_id("--hopper-program-id", &value)?);
+            }
+            "--pinocchio-program-id" => {
+                let value = args
+                    .next()
+                    .ok_or_else(|| "missing value for --pinocchio-program-id".to_string())?;
+                program_ids.pinocchio = Some(parse_program_id("--pinocchio-program-id", &value)?);
+            }
+            "--quasar-program-id" => {
+                let value = args
+                    .next()
+                    .ok_or_else(|| "missing value for --quasar-program-id".to_string())?;
+                program_ids.quasar = Some(parse_program_id("--quasar-program-id", &value)?);
+            }
+            "--anchor-program-id" => {
+                let value = args
+                    .next()
+                    .ok_or_else(|| "missing value for --anchor-program-id".to_string())?;
+                program_ids.anchor = Some(parse_program_id("--anchor-program-id", &value)?);
+            }
             _ => {
                 return Err(format!(
-                    "unknown argument '{arg}'; expected [--hopper-root <path>] [--quasar-root <path>] [--anchor-root <path>] [--out-dir <path>]"
+                    "unknown argument '{arg}'; expected [--hopper-root <path>] [--quasar-root <path>] [--anchor-root <path>] [--out-dir <path>] [--hopper-program-id <id>] [--pinocchio-program-id <id>] [--quasar-program-id <id>] [--anchor-program-id <id>]"
                 ));
             }
         }
@@ -345,7 +387,12 @@ fn parse_args() -> Result<Args, String> {
         quasar_root,
         anchor_root,
         out_dir,
+        program_ids,
     })
+}
+
+fn parse_program_id(flag: &str, value: &str) -> Result<Address, String> {
+    Address::from_str(value).map_err(|err| format!("invalid {flag} value `{value}`: {err}"))
 }
 
 fn workspace_root() -> Result<PathBuf, String> {
@@ -395,6 +442,7 @@ fn run_program(spec: &ProgramSpec) -> Result<FrameworkMetric, String> {
 
     Ok(FrameworkMetric {
         framework: spec.framework,
+        program_id: spec.program_id.to_string(),
         authorize_cu,
         authorize_missing_signature_cu,
         counter_access_cu,
@@ -435,14 +483,7 @@ fn run_deposit_case(spec: &ProgramSpec, user: Address) -> Result<u64, String> {
     let vault = vault_address(&spec.program_id, &user);
 
     let result = mollusk.process_instruction(
-        &deposit_instruction(
-            spec.program_id,
-            user,
-            true,
-            vault,
-            system_program,
-            DEPOSIT_AMOUNT,
-        ),
+        &deposit_instruction(spec, user, true, vault, system_program, DEPOSIT_AMOUNT),
         &[
             (user, Account::new(USER_LAMPORTS, 0, &SYSTEM_PROGRAM_ID)),
             (vault, Account::new(0, 0, &spec.program_id)),
@@ -483,7 +524,7 @@ fn run_authorize_case(spec: &ProgramSpec, user: Address) -> Result<u64, String> 
     let vault = vault_address(&spec.program_id, &user);
 
     let result = mollusk.process_instruction(
-        &authorize_instruction(spec.program_id, user, true, vault),
+        &authorize_instruction(spec, user, true, vault),
         &[
             (user, Account::new(USER_LAMPORTS, 0, &SYSTEM_PROGRAM_ID)),
             (
@@ -518,7 +559,7 @@ fn run_authorize_missing_signature_case(spec: &ProgramSpec, user: Address) -> Re
     let vault = vault_address(&spec.program_id, &user);
 
     let result = mollusk.process_instruction(
-        &authorize_instruction(spec.program_id, user, false, vault),
+        &authorize_instruction(spec, user, false, vault),
         &[
             (user, Account::new(USER_LAMPORTS, 0, &SYSTEM_PROGRAM_ID)),
             (
@@ -552,10 +593,10 @@ fn run_counter_access_case(spec: &ProgramSpec, user: Address) -> Result<u64, Str
     let vault = vault_address(&spec.program_id, &user);
 
     let result = mollusk.process_instruction(
-        &counter_access_instruction(spec.program_id, user, true, vault),
+        &counter_access_instruction(spec, user, true, vault),
         &[
             (user, Account::new(USER_LAMPORTS, 0, &SYSTEM_PROGRAM_ID)),
-            (vault, counter_vault_account(&spec.program_id, &user)),
+            (vault, counter_vault_account(spec, &spec.program_id, &user)),
         ],
     );
 
@@ -568,7 +609,7 @@ fn run_counter_access_case(spec: &ProgramSpec, user: Address) -> Result<u64, Str
 
     let user_after = lamports_for(&result.resulting_accounts, &user)?;
     let vault_after = lamports_for(&result.resulting_accounts, &vault)?;
-    let counter_after = counter_for(&result.resulting_accounts, &vault)?;
+    let counter_after = counter_for(spec, &result.resulting_accounts, &vault)?;
 
     if user_after != USER_LAMPORTS || vault_after != WITHDRAW_VAULT_LAMPORTS {
         return Err(format!(
@@ -593,7 +634,7 @@ fn run_withdraw_case(spec: &ProgramSpec, user: Address) -> Result<u64, String> {
     let vault = vault_address(&spec.program_id, &user);
 
     let result = mollusk.process_instruction(
-        &withdraw_instruction(spec.program_id, user, true, vault, WITHDRAW_AMOUNT),
+        &withdraw_instruction(spec, user, true, vault, WITHDRAW_AMOUNT),
         &[
             (user, Account::new(USER_LAMPORTS, 0, &SYSTEM_PROGRAM_ID)),
             (
@@ -638,7 +679,7 @@ fn run_unsigned_withdraw_rejection(spec: &ProgramSpec, user: Address) -> Result<
     let vault = vault_address(&spec.program_id, &user);
 
     let result = mollusk.process_instruction(
-        &withdraw_instruction(spec.program_id, user, false, vault, WITHDRAW_AMOUNT),
+        &withdraw_instruction(spec, user, false, vault, WITHDRAW_AMOUNT),
         &[
             (user, Account::new(USER_LAMPORTS, 0, &SYSTEM_PROGRAM_ID)),
             (
@@ -676,18 +717,32 @@ fn vault_address(program_id: &Address, user: &Address) -> Address {
     vault
 }
 
+fn is_anchor(spec: &ProgramSpec) -> bool {
+    spec.framework == "anchor"
+}
+
+fn instruction_data(spec: &ProgramSpec, discriminator: u8) -> Vec<u8> {
+    if is_anchor(spec) {
+        let mut data = vec![0u8; 8];
+        data[0] = discriminator;
+        data
+    } else {
+        vec![discriminator]
+    }
+}
+
 fn deposit_instruction(
-    program_id: Address,
+    spec: &ProgramSpec,
     user: Address,
     user_is_signer: bool,
     vault: Address,
     system_program: Address,
     amount: u64,
 ) -> Instruction {
-    let mut data = vec![0u8];
+    let mut data = instruction_data(spec, 0);
     data.extend_from_slice(&amount.to_le_bytes());
     Instruction {
-        program_id,
+        program_id: spec.program_id,
         accounts: vec![
             AccountMeta::new(user, user_is_signer),
             AccountMeta::new(vault, false),
@@ -698,48 +753,48 @@ fn deposit_instruction(
 }
 
 fn authorize_instruction(
-    program_id: Address,
+    spec: &ProgramSpec,
     user: Address,
     user_is_signer: bool,
     vault: Address,
 ) -> Instruction {
     Instruction {
-        program_id,
+        program_id: spec.program_id,
         accounts: vec![
             AccountMeta::new(user, user_is_signer),
             AccountMeta::new(vault, false),
         ],
-        data: vec![2u8],
+        data: instruction_data(spec, 2),
     }
 }
 
 fn counter_access_instruction(
-    program_id: Address,
+    spec: &ProgramSpec,
     user: Address,
     user_is_signer: bool,
     vault: Address,
 ) -> Instruction {
     Instruction {
-        program_id,
+        program_id: spec.program_id,
         accounts: vec![
             AccountMeta::new(user, user_is_signer),
             AccountMeta::new(vault, false),
         ],
-        data: vec![3u8],
+        data: instruction_data(spec, 3),
     }
 }
 
 fn withdraw_instruction(
-    program_id: Address,
+    spec: &ProgramSpec,
     user: Address,
     user_is_signer: bool,
     vault: Address,
     amount: u64,
 ) -> Instruction {
-    let mut data = vec![1u8];
+    let mut data = instruction_data(spec, 1);
     data.extend_from_slice(&amount.to_le_bytes());
     Instruction {
-        program_id,
+        program_id: spec.program_id,
         accounts: vec![
             AccountMeta::new(user, user_is_signer),
             AccountMeta::new(vault, false),
@@ -756,41 +811,73 @@ fn lamports_for(accounts: &[(Address, Account)], key: &Address) -> Result<u64, S
         .ok_or_else(|| format!("missing resulting account {}", key))
 }
 
-fn counter_vault_account(program_id: &Address, authority: &Address) -> Account {
-    let mut account = Account::new(WITHDRAW_VAULT_LAMPORTS, COUNTER_DATA_LEN, program_id);
-    account.data[..32].copy_from_slice(authority.as_ref());
-    account.data[32..40].copy_from_slice(&COUNTER_INITIAL_VALUE.to_le_bytes());
+fn counter_vault_account(spec: &ProgramSpec, program_id: &Address, authority: &Address) -> Account {
+    let mut account = Account::new(WITHDRAW_VAULT_LAMPORTS, counter_data_len(spec), program_id);
+    let authority_offset = counter_authority_offset(spec);
+    let counter_offset = counter_offset(spec);
+    if is_anchor(spec) {
+        account.data[..8].copy_from_slice(&ANCHOR_COUNTER_STATE_DISCRIMINATOR);
+    }
+    account.data[authority_offset..authority_offset + 32].copy_from_slice(authority.as_ref());
+    account.data[counter_offset..counter_offset + 8]
+        .copy_from_slice(&COUNTER_INITIAL_VALUE.to_le_bytes());
     account
 }
 
-fn counter_for(accounts: &[(Address, Account)], key: &Address) -> Result<u64, String> {
+fn counter_for(
+    spec: &ProgramSpec,
+    accounts: &[(Address, Account)],
+    key: &Address,
+) -> Result<u64, String> {
     let account = accounts
         .iter()
         .find(|(address, _)| address == key)
         .map(|(_, account)| account)
         .ok_or_else(|| format!("missing resulting account {}", key))?;
 
-    if account.data.len() < COUNTER_DATA_LEN {
+    if account.data.len() < counter_data_len(spec) {
         return Err(format!(
             "resulting account {} data too small for counter access scenario",
             key,
         ));
     }
 
+    let counter_offset = counter_offset(spec);
     let mut counter_bytes = [0u8; 8];
-    counter_bytes.copy_from_slice(&account.data[32..40]);
+    counter_bytes.copy_from_slice(&account.data[counter_offset..counter_offset + 8]);
     Ok(u64::from_le_bytes(counter_bytes))
+}
+
+fn counter_data_len(spec: &ProgramSpec) -> usize {
+    if is_anchor(spec) {
+        ANCHOR_COUNTER_DATA_LEN
+    } else {
+        COUNTER_DATA_LEN
+    }
+}
+
+fn counter_authority_offset(spec: &ProgramSpec) -> usize {
+    if is_anchor(spec) {
+        8
+    } else {
+        0
+    }
+}
+
+fn counter_offset(spec: &ProgramSpec) -> usize {
+    counter_authority_offset(spec) + 32
 }
 
 fn csv_report(report: &Report) -> String {
     let mut out = String::from(
-        "Framework,AuthorizeCu,AuthorizeMissingSignatureCu,CounterAccessCu,DepositCu,WithdrawCu,AuthorizeVsHopper,CounterAccessVsHopper,DepositVsHopper,WithdrawVsHopper,BinarySizeBytes,BinarySizeKiB,UnsignedWithdrawRejected\n",
+        "Framework,ProgramId,AuthorizeCu,AuthorizeMissingSignatureCu,CounterAccessCu,DepositCu,WithdrawCu,AuthorizeVsHopper,CounterAccessVsHopper,DepositVsHopper,WithdrawVsHopper,BinarySizeBytes,BinarySizeKiB,UnsignedWithdrawRejected\n",
     );
 
     for benchmark in &report.benchmarks {
         out.push_str(&format!(
-            "{},{},{},{},{},{},{},{},{},{},{},{:.2},{}\n",
+            "{},{},{},{},{},{},{},{},{},{},{},{},{:.2},{}\n",
             benchmark.framework,
+            benchmark.program_id,
             csv_opt_u64(benchmark.authorize_cu),
             csv_opt_u64(benchmark.authorize_missing_signature_cu),
             csv_opt_u64(benchmark.counter_access_cu),
