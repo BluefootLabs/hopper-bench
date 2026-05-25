@@ -29,7 +29,7 @@ The audit's methodology requirements (page 15) are:
 | **Hopper** | `$hopper_root/target/deploy/hopper_parity_vault.so` (main Hopper repo) | Yes. baseline |
 | **Pinocchio** | `target/deploy/pinocchio_vault.so` (this repo, `pinocchio-vault`) | Yes. raw-substrate baseline |
 | **Quasar** | `$quasar_root/target/deploy/quasar_vault.so` | Optional, skipped if `--quasar-root` is not passed or the binary is missing |
-| **Anchor** | `anchor-vault/target/deploy/anchor_vault.so` (in-tree, R9) or `$anchor_root/target/deploy/anchor_vault.so` | Optional. A supplied `--anchor-root` is preferred. Devnet runs stage a temporary Anchor build whose `declare_id!` matches the generated deployed program ID. |
+| **Anchor** | `$anchor_root/target/deploy/anchor_vault.so`; the PowerShell wrapper can also use this repo's in-tree `anchor-vault` when `-IncludeAnchor` is passed | Optional and explicit. Devnet runs stage a temporary Anchor build whose `declare_id!` matches the generated deployed program ID. |
 
 The Pinocchio baseline is now built in-tree against Anza's own
 `pinocchio = "0.10"` and `pinocchio-system = "0.5"` crates
@@ -58,7 +58,7 @@ makes each compute-unit delta meaningful.
 Quasar's upstream `examples/vault` currently implements only `deposit` and
 `withdraw`; the runner records `null` for Quasar's `authorize` and
 `counter_access` fields. Hopper, the in-tree Anza Pinocchio target, and the
-in-tree Anchor target implement the extended rows.
+explicitly requested Anchor target implement the extended rows.
 
 The vault state layout is:
 
@@ -135,11 +135,11 @@ publishing any cross-framework numbers.
 
 ```bash
 # Build the in-tree baselines. Hopper and Pinocchio are both local;
-# Quasar and Anchor are external and optional.
+# Quasar and Anchor are optional; Anchor is included only when requested.
 cargo build-sbf --manifest-path ../Hopper-Solana-Zero-copy-State-Framework/examples/hopper-parity-vault/Cargo.toml
 cargo build-sbf --manifest-path pinocchio-vault/Cargo.toml
 (cd $QUASAR_ROOT && cargo build-sbf -p quasar-vault)       # optional
-cargo build-sbf --manifest-path anchor-vault/Cargo.toml  # optional in-tree Anchor (R9)
+cargo build-sbf --manifest-path anchor-vault/Cargo.toml    # optional in-tree Anchor (R9; explicit only)
 (cd $ANCHOR_ROOT && anchor build -p anchor-vault)          # optional external
 
 # Run the shared harness. `--quasar-root` and `--anchor-root` are
@@ -161,6 +161,9 @@ cargo run -p framework-vault-bench --release -- \
    -DeployDevnet `
    -Keypair C:\path\to\devnet-payer.json `
    -RpcUrl https://api.devnet.solana.com
+
+# Add -IncludeAnchor only when the in-tree Anchor comparator should join
+# the local or devnet matrix.
 
 # Inspect.
 jq '.benchmarks[] | {framework, authorize_cu, deposit_cu, binary_size_kib}' \

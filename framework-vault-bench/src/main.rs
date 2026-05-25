@@ -130,7 +130,9 @@ fn run() -> Result<(), String> {
     // third-party reference. Quasar is the framework-tier comparator,
     // loaded from `$quasar_root/target/deploy/quasar_vault.so`. Anchor
     // is optional; pass `--anchor-root <path>` and the anchor_vault.so
-    // there is appended to the matrix. Frameworks whose binaries are
+    // there is appended to the matrix. The runner does not auto-discover
+    // in-tree Anchor artifacts because stale local builds can carry a
+    // different declared program ID. Frameworks whose binaries are
     // missing are skipped and logged rather than erroring out; partial
     // runs are valid during development. CI builds require every
     // framework to be present (see `bench/METHODOLOGY.md`). See
@@ -159,23 +161,13 @@ fn run() -> Result<(), String> {
             supports_validation_workloads: false,
         });
     }
-    // Anchor: prefer an explicit `--anchor-root` so devnet runs can
-    // pass a staged build whose `declare_id!` matches the deployed
-    // program keypair. Fall back to the in-tree Anchor binary if it
-    // has been built.
-    let anchor_in_tree = workspace_root.join("anchor-vault/target/deploy/anchor_vault.so");
+    // Anchor is explicit-only so a stale in-tree artifact cannot silently
+    // change a Hopper/Pinocchio/Quasar comparison matrix.
     if let Some(anchor_root) = &args.anchor_root {
         specs.push(ProgramSpec {
             framework: "anchor",
             program_id: args.program_ids.anchor.unwrap_or(ANCHOR_PROGRAM_ID),
             binary_path: anchor_root.join("target/deploy/anchor_vault.so"),
-            supports_validation_workloads: true,
-        });
-    } else if anchor_in_tree.is_file() {
-        specs.push(ProgramSpec {
-            framework: "anchor",
-            program_id: args.program_ids.anchor.unwrap_or(ANCHOR_PROGRAM_ID),
-            binary_path: anchor_in_tree,
             supports_validation_workloads: true,
         });
     }

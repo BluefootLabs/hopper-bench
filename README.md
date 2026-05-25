@@ -59,8 +59,10 @@ The thin wrappers `measure.sh` and `measure.ps1` delegate to
 ## Cross-framework vault comparison
 
 The vault comparison builds the in-tree Hopper and Pinocchio parity targets and
-runs them under one Mollusk harness. Quasar and Anchor are optional and require
-explicit local checkout roots.
+runs them under one Mollusk harness. Quasar is optional and requires an explicit
+local checkout root. Anchor is also opt-in: pass an external root with
+`-AnchorRoot`, or pass `-IncludeAnchor` to use this repo's in-tree Anchor
+comparator.
 
 ```powershell
 # Minimal: Hopper vs Pinocchio only.
@@ -68,13 +70,16 @@ explicit local checkout roots.
 
 # Include Quasar from a local checkout.
 .\compare-framework-vaults.ps1 -HopperRoot d:\tmp\Hopper-Solana-Zero-copy-State-Framework -QuasarRoot d:\tmp\quasar
+
+# Include Quasar plus the in-tree Anchor comparator.
+.\compare-framework-vaults.ps1 -HopperRoot d:\tmp\Hopper-Solana-Zero-copy-State-Framework -QuasarRoot d:\tmp\quasar -IncludeAnchor
 ```
 
 The benchmark flow:
 
 - builds the Hopper parity vault from the main Hopper checkout,
 - builds the in-tree `pinocchio-vault`,
-- optionally builds Quasar and Anchor comparators,
+- optionally builds Quasar and explicitly requested Anchor comparators,
 - runs shared deterministic user seed cases,
 - writes JSON and CSV metrics under `results/framework-vaults`.
 

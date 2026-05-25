@@ -15,6 +15,10 @@ param(
     # the `anchor` framework is added to the comparison matrix.
     [string]$AnchorRoot,
 
+    # Include this repo's in-tree Anchor comparator. Anchor is opt-in so
+    # stale local artifacts cannot silently change a Hopper/Quasar run.
+    [switch]$IncludeAnchor,
+
     [string]$OutDir = "bench\results\framework-vaults",
 
     # Deploy every built framework artifact to this cluster before running
@@ -53,6 +57,11 @@ if ($QuasarRoot) {
 $resolvedAnchorRoot = $null
 if ($AnchorRoot) {
     $resolvedAnchorRoot = (Resolve-Path -LiteralPath $AnchorRoot).Path
+} elseif ($IncludeAnchor) {
+    $resolvedAnchorRoot = Join-Path $benchRoot "anchor-vault"
+}
+if ($resolvedAnchorRoot -and (-not (Test-Path -LiteralPath (Join-Path $resolvedAnchorRoot "Cargo.toml")))) {
+    throw "Anchor root does not look valid: missing Cargo.toml at $resolvedAnchorRoot"
 }
 
 New-Item -ItemType Directory -Force -Path $resolvedOutDir | Out-Null
@@ -322,9 +331,8 @@ if (-not $NoBuild) {
     Invoke-CargoCapture -WorkingDirectory $resolvedHopperRoot -Arguments @("build-sbf", "--manifest-path", "examples/hopper-parity-vault/Cargo.toml") | Out-Null
     Invoke-CargoCapture -WorkingDirectory $benchRoot -Arguments @("build-sbf", "--manifest-path", "pinocchio-vault/Cargo.toml") | Out-Null
 
-    $anchorManifest = Join-Path $benchRoot "anchor-vault\Cargo.toml"
-    if ((-not $DeployDevnet) -and (Test-Path -LiteralPath $anchorManifest)) {
-        Invoke-CargoCapture -WorkingDirectory $benchRoot -Arguments @("build-sbf", "--manifest-path", "anchor-vault/Cargo.toml") | Out-Null
+    if ((-not $DeployDevnet) -and $resolvedAnchorRoot) {
+        Invoke-CargoCapture -WorkingDirectory $benchRoot -Arguments @("build-sbf", "--manifest-path", (Join-Path $resolvedAnchorRoot "Cargo.toml")) | Out-Null
     }
 
     # Optional external comparators.
@@ -358,11 +366,10 @@ if ($DeployDevnet) {
     if ($resolvedQuasarRoot) {
         $artifactSpecs += [ordered]@{ framework = "quasar"; binaryPath = Join-Path $resolvedQuasarRoot "target\deploy\quasar_vault.so" }
     }
-    $anchorSourceRoot = Join-Path $benchRoot "anchor-vault"
-    if (Test-Path -LiteralPath (Join-Path $anchorSourceRoot "Cargo.toml")) {
+    if ($resolvedAnchorRoot) {
         $anchorProgramKeypair = New-ProgramKeypair -Framework "anchor" -DeployDir $deployDir
         $anchorProgramId = (Invoke-ExternalCapture -FilePath "solana-keygen" -Arguments @("pubkey", $anchorProgramKeypair)).Trim()
-        $runnerAnchorRoot = New-AnchorDevnetBuildRoot -SourceRoot $anchorSourceRoot -DeployDir $deployDir -ProgramId $anchorProgramId
+        $runnerAnchorRoot = New-AnchorDevnetBuildRoot -SourceRoot $resolvedAnchorRoot -DeployDir $deployDir -ProgramId $anchorProgramId
         $anchorArtifact = Join-Path $runnerAnchorRoot "target\deploy\anchor_vault.so"
         $artifactSpecs += [ordered]@{ framework = "anchor"; binaryPath = $anchorArtifact; programKeypair = $anchorProgramKeypair }
     }
