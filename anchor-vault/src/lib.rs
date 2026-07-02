@@ -44,7 +44,10 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::{program::invoke, system_instruction};
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+// Matches framework-vault-bench's hardcoded ANCHOR_PROGRAM_ID so
+// Anchor's runtime declared-id check passes in local Mollusk runs.
+// Devnet runs still stage a rewritten copy (see module docs above).
+declare_id!("CHzdmCgb3dwfqBmkxHwZBAnd1emCMWpipHwRZe1rRbvM");
 
 #[program]
 pub mod anchor_vault {

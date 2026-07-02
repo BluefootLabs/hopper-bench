@@ -12,11 +12,15 @@ crate-type = ["cdylib", "lib"]
 [dependencies]
 hopper = { path = "../../Hopper-Solana-Zero-copy-State-Framework", package = "hopper-lang", default-features = false, features = ["proc-macros"] }
 
+# The framework unified on the native backend (the old
+# hopper-native-backend / legacy-pinocchio-compat / solana-program-backend
+# selection features were removed upstream). The names are kept as local
+# no-ops so existing command lines still parse; they no longer forward.
 [features]
-default = ["hopper-native-backend"]
-hopper-native-backend = ["hopper/hopper-native-backend"]
-legacy-pinocchio-compat = ["hopper/legacy-pinocchio-compat"]
-solana-program-backend = ["hopper/solana-program-backend"]
+default = []
+hopper-native-backend = []
+legacy-pinocchio-compat = []
+solana-program-backend = []
 
 [lints.rust]
 unexpected_cfgs = { level = "allow", check-cfg = ['cfg(target_os, values("solana"))'] }
