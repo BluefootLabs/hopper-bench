@@ -1,0 +1,49 @@
+# Quasar implementation of the router parity contract (ROUTER_CONTRACT.md v1).
+#
+# BUILD ISOLATION: this crate is deliberately NOT a member of the hopper-bench
+# workspace. Quasar's dependency graph (zeropod 0.3, solana-account-view 2.0,
+# solana-instruction-view =2.0, solana-address >=2.2,<2.6, ...) would collide
+# with the workspace lock (mollusk-svm 0.10.3 pin), so the crate carries its
+# own empty [workspace] table and its own Cargo.lock, with a path dependency
+# into the read-only Quasar checkout. See README.md for the exact build
+# command and pinned Quasar commit.
+
+[package]
+name = "quasar-router"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+doctest = false
+
+# Same check-cfg registration as the Quasar workspace's lint table, so the
+# framework macros' `cfg(target_os = "solana")` guards do not warn.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }
+
+[features]
+alloc = []
+debug = []
+idl-build = ["quasar-lang/idl-build"]
+
+[dependencies]
+quasar-lang = { path = "E:/Frameworks/quasar/lang" }
+
+# Standalone workspace: keeps this crate (and Quasar's dependency graph /
+# lockfile) fully isolated from the hopper-bench workspace lock.
+[workspace]
+
+# Mirror the Quasar workspace's release profile so the SBF artifact is built
+# the way Quasar's own examples are built (their Makefile builds examples
+# with `cargo build-sbf` under this exact profile).
+[profile.release]
+overflow-checks = true
+lto = "fat"
+codegen-units = 1
+opt-level = 3
+
+[profile.release.build-override]
+opt-level = 3
+incremental = false
+codegen-units = 1

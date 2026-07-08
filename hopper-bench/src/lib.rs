@@ -77,7 +77,12 @@ pub struct ProcBenchDeposit {
     pub vault: ProcBenchVault,
 }
 
-#[hopper::program]
+// `entrypoint = false`: this crate declares its own `program_entrypoint!`
+// below (the disc-based bench dispatcher); since the framework's
+// `#[hopper::program]` started emitting an entrypoint by default, the
+// generated one must be suppressed to avoid a duplicate-`entrypoint`
+// definition under `cargo build-sbf`.
+#[hopper::program(entrypoint = false)]
 mod proc_macro_bench_program {
     use super::*;
 

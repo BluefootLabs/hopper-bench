@@ -1,0 +1,16 @@
+[package]
+name = "mock-amm"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+description = "Shared mock AMM CPI target for the router parity benchmark. Implements the single SWAP instruction defined in ROUTER_CONTRACT.md; built once in Anza Pinocchio so every framework's router hops through the identical venue."
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+pinocchio = { workspace = true }
+
+[lints.rust]
+unexpected_cfgs = { level = "allow", check-cfg = ['cfg(target_os, values("solana"))'] }

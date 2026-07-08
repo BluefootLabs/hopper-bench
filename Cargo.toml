@@ -4,7 +4,10 @@ members = [
     "hopper-bench",
     "framework-vault-bench",
     "lazy-dispatch-vault",
+    "mock-amm",
+    "pinocchio-router",
     "pinocchio-vault",
+    "router-bench",
 ]
 resolver = "2"
 

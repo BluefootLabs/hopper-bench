@@ -1,0 +1,25 @@
+[package]
+name = "primitive-bench"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+description = "Mollusk host runner for the Hopper primitive CU micro-benchmark. Loads the hopper-bench on-chain program (discs 0..=21), fabricates the fixture accounts each disc expects, and reports two CU columns per primitive: whole-instruction CU and the sol_log_compute_units bracketed delta parsed from program logs (comparable with the historical validator-log method)."
+
+# Standalone workspace: this crate is intentionally NOT (yet) a member of
+# the hopper-bench workspace because the workspace root Cargo.toml is owned
+# by another change in flight. It resolves and locks independently; see the
+# repo root for the member line to add when integrating.
+[workspace]
+
+[dependencies]
+mollusk-svm = "0.10.3"
+solana-account = "3.4.0"
+solana-address = { version = "2.2.0", features = ["decode"] }
+solana-instruction = { version = "3.1.0", features = ["bincode"] }
+# Same crate/version family Mollusk 0.10.3 uses for its `logger` field; the
+# bracketed-delta column is parsed from LogCollector messages.
+solana-svm-log-collector = "3.1"
+
+[lints.rust]
+unexpected_cfgs = { level = "allow", check-cfg = ['cfg(target_os, values("solana"))'] }
