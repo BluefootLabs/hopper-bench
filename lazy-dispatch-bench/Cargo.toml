@@ -1,0 +1,16 @@
+[package]
+name = "lazy-dispatch-bench"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+description = "R3 harness. Runs every lazy-dispatch-vault instruction against the eager and lazy .so builds under Mollusk with identical fixtures and prints the per-instruction CU table (eager | lazy | delta) plus binary sizes. Hopper-vs-Hopper: one framework, two entrypoint strategies."
+
+[dependencies]
+mollusk-svm = "0.10.3"
+solana-account = "3.4.0"
+solana-address = { version = "2.2.0", features = ["decode"] }
+solana-instruction = { version = "3.1.0", features = ["bincode"] }
+
+[lints.rust]
+unexpected_cfgs = { level = "allow", check-cfg = ['cfg(target_os, values("solana"))'] }

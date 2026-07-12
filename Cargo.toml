@@ -3,6 +3,7 @@ exclude = ["anchor-vault", "docker"]
 members = [
     "hopper-bench",
     "framework-vault-bench",
+    "lazy-dispatch-bench",
     "lazy-dispatch-vault",
     "mock-amm",
     "pinocchio-router",
@@ -22,3 +23,9 @@ unexpected_cfgs = { level = "allow", check-cfg = [
     'cfg(target_os, values("solana"))',
     'cfg(target_arch, values("bpf"))',
 ] }
+
+# For `hopper profile elf --inlines` attribution builds, temporarily add:
+#   [profile.release]
+#   debug = 2
+# NOTE: platform-tools' -g measurably CHANGES deploy codegen (+152 B seen),
+# so NEVER leave it on for CU/size measurement runs — measure debug=0.

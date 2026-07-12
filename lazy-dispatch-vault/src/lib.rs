@@ -70,6 +70,10 @@ compile_error!("lazy-dispatch-vault requires exactly one of `eager` or `lazy`, n
 use hopper::prelude::*;
 use hopper::systems::SegmentBorrowRegistry;
 
+// The lazy entrypoint is runtime-typed (same layering as the eager
+// `fast_entrypoint!`): `LazyContext` comes from the prelude and hands
+// out runtime `AccountView`s directly — no substrate glue.
+
 #[cfg(target_os = "solana")]
 mod __sbf {
     use super::*;
